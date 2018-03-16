@@ -65,7 +65,7 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	# filter_banks
 	num_ceps = 12 #number of ceps coefficients
 	mfcc = dct(filter_banks, type=2, axis=1, norm='ortho')[:, 1 : (num_ceps + 1)] # keep ceps from 2 to 13
-	return mfcc
+	return (mfcc,filter_banks)
 
 # Encode the data using Logirthmtic Spectral representations
 def logSpecEncoding(data):
@@ -138,11 +138,11 @@ S_log_Spec = logSpecEncoding(S_Spec)
 T_log_Spec = logSpecEncoding(T_Spec)
 
 # size of t and s
-s = S_log_Spec.shape[0]
-t = T_log_Spec.shape[0]
+# s = S_log_Spec.shape[0]
+# t = T_log_Spec.shape[0]
 
-MFCC_S = MFCCEncoding(window_size = 256,signal = S_array,sample_rate = sf1)
-MFCC_T = MFCCEncoding(window_size = 256,signal = T_array,sample_rate = sf2)
+MFCC_S,log_S = MFCCEncoding(window_size = 256,signal = S_array,sample_rate = sf1)
+MFCC_T,log_T = MFCCEncoding(window_size = 256,signal = T_array,sample_rate = sf2)
 
 s = len(MFCC_S)
 t = len(MFCC_T)
@@ -150,13 +150,17 @@ t = len(MFCC_T)
 # t = len(T)
 
 score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]
-score_matrix = np.array([np.array(xi) for xi in score_matrix_raw])
-
+score_matrix = np.array([np.array(xi) for xi in score_matrix_raw]) # score matrix for MFCC
+score_matrix_1 = score_matrix.copy()
 # score_matrix_raw = []
 #create the score matrix as a global variable
 # minimum distance using log spectrum representation
-min_distance_log_representation = dp(s-1,t-1,MFCC_S,MFCC_T)
-print ("Minimum Distance between MFCC of waveforms {} and {}: {} ".format(file1,file2,min_distance_log_representation))
+min_distance_MFCC_representation = dp(s-1,t-1,MFCC_S,MFCC_T)
+score_matrix = score_matrix_1
+min_distance_log_representation = dp(s-1,t-1,log_S,log_T)
+print ("Minimum Distance between MFCC of waveforms {} and {}: {} ".format(file1,file2,min_distance_MFCC_representation))
+print ("Minimum Distance between log spec of waveforms {} and {}: {} ".format(file1,file2,min_distance_log_representation))
+
 
 
 	# array
