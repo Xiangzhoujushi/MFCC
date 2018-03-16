@@ -86,16 +86,18 @@ def MFCCEncoding(window_size,signal,sample_rate):
 
 	# coefficients
 	H = np.zeros(shape=(num_filter, coefficent_num))
+
 	for m in range(1, num_filter+1):
 	    f_m_left = int(f[m - 1])    # left
 	    f_m = int(f[m])             # center
 	    f_m_right = int(f[m + 1])   # right
-	    for k in range(f_m_left, f_m):
-	        H[m - 1, k] = (k - f[m - 1]) / (f[m] - f[m - 1]) #implement the filtering
-	    for k in range(f_m, f_m_right):
-	        H[m - 1, k] = (f[m + 1] - k) / (f[m + 1] - f[m]) #implement the filtering
+	    denom1  = (f[m] - f[m - 1])*(f[m+1]-f[m-1])
+	    denom2 = (f[m+1] - f[m])*(f[m+1]-f[m-1])
+	    for k in range(f_m_left, f_m+1):
+	        H[m - 1, k] = (2*(k - f[m - 1])) / denom1 #implement the filtering
+	    for k in range(f_m, f_m_right+1):
+	        H[m - 1, k] = (2*(f[m + 1] - k)) / denom2 #implement the filtering
 	    # get 1 and other parts are default zeroes
-	    H[m-1,f_m] = 1
 	    # zeroes for other ranges 
 	#perform the sum S[m]=ln∑Xa[k]^2Hm[k],0<m≤M , dot product between each with the power sum of the frame,      
 	final_segements = pow_frames @ H.transpose() # find the forier  magnitude
@@ -107,6 +109,8 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	#take the discrete fourier transform along the second axis and keep 12 coefficients
 	mfcc = dct(final_segements, type=2, axis=-1, norm='ortho')[:, 1 : (num_ceps + 1)] 
 	# keep cepstral coefficients from 2 to 13
+
+	# return mfcc and logarithimic spec representation
 	return (mfcc,final_segements)
 
 # Encode the data using Logirthmtic Spectral representations
