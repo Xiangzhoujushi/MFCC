@@ -11,7 +11,7 @@ sys.setrecursionlimit(150000)
 def MFCCEncoding(window_size,signal,sample_rate):
 	# input data is the np array, new_data is the data after the fast fourier transfrom
 	alpha = 0.97 #preemphais coeff
-	emphasized_signal = np.append(signal[0], signal[1:] - alpha * signal[:-1])
+	new_signal = np.append(signal[0], signal[1:] - alpha * signal[:-1])
 	# hamming = np.hamming(window_size)# hamming window 
 	# window_start = np.arange(0,new_signal.shape[0]-window_size,shift) # position of the start of the window
 	# # windowing
@@ -21,20 +21,22 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	#     start = window_start[i]
 	#     X = np.fft.fft(new_signal[start:(start+window_size)]*hamming)
 	#     frames[i,:] = X
-	frame_size = 0.025
-	frame_stride = 0.01
+	frame_size = 0.02 # frame size
+	frame_step = 0.01 # frame stride
 	
 
-	frame_length, frame_step = frame_size * sample_rate, frame_stride * sample_rate  # Convert from seconds to samples
-	signal_length = len(emphasized_signal)# length of the signals
+	frame_length  = frame_size * sample_rate # Convert from seconds to samples
+	frame_step = frame_step * sample_rate  # Convert from seconds to samples
+	signal_length = len(new_signal)# length of the signals
 	frame_length = int(round(frame_length)) # round the frame_length
 	frame_step = int(round(frame_step)) # get the step of the frame
-	num_frames = int(np.ceil(float(np.abs(signal_length - frame_length)) / frame_step))  # Make sure that we have at least 1 frame
+	num_frames = int(np.ceil(float(np.abs(signal_length - frame_length)) / frame_step))  # save at least one frame
+
 	pad_signal_length = num_frames * frame_step + frame_length
-	z = np.zeros((pad_signal_length - signal_length))
-	pad_signal = np.append(emphasized_signal, z) # Pad Signal to make sure that all frames have equal number of samples without truncating any samples from the original signal
+	zero_array = np.zeros((pad_signal_length - signal_length))
+	saved_signal = np.append(new_signal, zero_array) # saved signal Signal to make sure that all frames have equal number of samples without truncating any samples from the original signal
 	indices = np.tile(np.arange(0, frame_length), (num_frames, 1)) + np.tile(np.arange(0, num_frames * frame_step, frame_step), (frame_length, 1)).transpose()
-	frames = pad_signal[indices.astype(np.int32, copy=False)]
+	frames = saved_signal[indices.astype(np.int32, copy=False)]
 
 	frames *= np.hamming(frame_length)
 	mag_frames = np.absolute(np.fft.rfft(frames, window_size))
