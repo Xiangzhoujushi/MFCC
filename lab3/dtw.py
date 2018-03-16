@@ -1,4 +1,5 @@
 #Peiyuan's version of MFCC algorithm,
+#some ideas of codes from some external resrouce (Fayem Hathak's blog)
 
 import numpy as np
 import scipy.io.wavfile 
@@ -10,8 +11,14 @@ sys.setrecursionlimit(150000)
 
 def MFCCEncoding(window_size,signal,sample_rate):
 	# input data is the np array, new_data is the data after the fast fourier transfrom
-	alpha = 0.97 #preemphais coeff
-	new_signal = np.append(signal[0], signal[1:] - alpha * signal[:-1])
+	#preemphasis
+	alpha = 0.97 
+	new_signal = np.zeros(len(signal))
+	for i in range(len(signal)):
+	    if i is 0:
+	        new_signal[i] = signal[0]
+	    else:
+	        new_signal[i] = signal[i]- alpha*signal[i-1]
 	# hamming = np.hamming(window_size)# hamming window 
 	# window_start = np.arange(0,new_signal.shape[0]-window_size,shift) # position of the start of the window
 	# # windowing
@@ -22,25 +29,44 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	#     X = np.fft.fft(new_signal[start:(start+window_size)]*hamming)
 	#     frames[i,:] = X
 	frame_size = 0.02 # frame size
-	frame_step = 0.01 # frame stride
-	
-
-	frame_length  = frame_size * sample_rate # Convert from seconds to samples
-	frame_step = frame_step * sample_rate  # Convert from seconds to samples
+	shift = 0.01 # frame stride
+	# steps to form all frames
+	frame_size  = frame_size * sample_rate # Convert from seconds to samples
+	shift = shift * sample_rate  # Convert from seconds to samples
 	signal_length = len(new_signal)# length of the signals
-	frame_length = int(round(frame_length)) # round the frame_length
-	frame_step = int(round(frame_step)) # get the step of the frame
-	num_frames = int(np.ceil(float(np.abs(signal_length - frame_length)) / frame_step))  # save at least one frame
+	frame_size = round(frame_size)# round the frame_size
+	shift = round(shift) # get the step of the frame
+	num_frames = int(np.ceil(np.abs(signal_length - frame_size) / shift))  # save at least one frame
 
-	pad_signal_length = num_frames * frame_step + frame_length
-	zero_array = np.zeros((pad_signal_length - signal_length))
-	saved_signal = np.append(new_signal, zero_array) # saved signal Signal to make sure that all frames have equal number of samples without truncating any samples from the original signal
-	indices = np.tile(np.arange(0, frame_length), (num_frames, 1)) + np.tile(np.arange(0, num_frames * frame_step, frame_step), (frame_length, 1)).transpose()
+	new_signal_length = num_frames * shift + frame_size
+	zero_array = np.zeros((new_signal_length - signal_length))
+	saved_signal = np.append(new_signal, zero_array) # saved_signal Signal to make sure that all frames have equal number of samples without truncating any samples from the original signal
+	
+	#form the data of each frame
+	indices = np.zeros(shape=(num_frames,frame_size))
+	prevx = 0
+	x = frame_size
+	for i in range(num_frames):
+	    indices[i] = np.arange(prevx,x)
+	    prevx += shift
+	    x+=shift
+	indices = indices.astype(np.int32, copy=False)
+	# len(signal)
+	# np.shape(frames)
+	# pad_signal[indices]
+	frames = saved_signal[indices]
+	# frames
+	
+	#create an array of frames
 	frames = saved_signal[indices.astype(np.int32, copy=False)]
 
-	frames *= np.hamming(frame_length)
-	mag_frames = np.absolute(np.fft.rfft(frames, window_size))
-	pow_frames = ((1.0 / window_size) * ((mag_frames) ** 2))
+	#hamming windowing
+	frames = frames * np.hamming(frame_size)
+	# fft on the frames to find the magnitude
+	eng_frames = np.absolute(np.fft.rfft(frames, window_size))
+
+	# find the powe of frames (average of the energy over the wave)
+	pow_frames = ((1.0 / window_size) * ((eng_frames) ** 2))
 	# for i  in wi
 	# we did not have duplicates
 	high_mel_freq = 1125 * np.log(1 + (sample_rate/2) / 700)
@@ -49,21 +75,24 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	mel_points = np.linspace(low_mel_freq, high_mel_freq, num_filter + 2)
 	# in hertz
 	hz_points = 700 * (math.e**(mel_points / 1127) - 1)
-	bin = np.floor((window_size + 1) * hz_points / sample_rate)
+	f = np.floor((window_size + 1) * hz_points / sample_rate)
 	# filter banks
-	fbank = np.zeros((num_filter, int(np.floor(window_size/2 + 1))))
+	H = np.zeros(shape=(num_filter, int(np.floor(window_size/2 + 1))))
 	for m in range(1, num_filter+1):
-	    f_m_left = int(bin[m - 1])    # left
-	    f_m = int(bin[m])             # center
-	    f_m_right = int(bin[m + 1])   # right
+	    f_m_left = int(f[m - 1])    # left
+	    f_m = int(f[m])             # center
+	    f_m_right = int(f[m + 1])   # right
 	    for k in range(f_m_left, f_m):
-	        fbank[m - 1, k] = (k - bin[m - 1]) / (bin[m] - bin[m - 1]) #implement the filtering
+	        H[m - 1, k] = (k - f[m - 1]) / (f[m] - f[m - 1]) #implement the filtering
 	    for k in range(f_m, f_m_right):
-	        fbank[m - 1, k] = (bin[m + 1] - k) / (bin[m + 1] - bin[m]) #implement the filtering
+	        H[m - 1, k] = (f[m + 1] - k) / (f[m + 1] - f[m]) #implement the filtering
+	    # get 1 and other parts are default zeroes
+	    H[m-1,f_m] = 1
+	    # zeroes for other ranges 
 	# dot product between each bank with the power sum of the frame       
-	filter_banks = np.dot(pow_frames, fbank.transpose()) # find the forier  
-	filter_banks = np.where(filter_banks == 0, np.finfo(float).eps, filter_banks)  # Numerical Stability
-	filter_banks = 20 * np.log(filter_banks) # take the logs
+	filter_banks = pow_frames @ H.transpose() # find the forier  magnitude
+	# filter_banks = np.where(filter_banks == 0, np.finfo(float).eps, filter_banks)  # Numerical Stability
+	filter_banks =  np.log(filter_banks) # take the logs
 	# filter_banks
 	num_ceps = 12 #number of ceps coefficients
 	mfcc = dct(filter_banks, type=2, axis=1, norm='ortho')[:, 1 : (num_ceps + 1)] # keep ceps from 2 to 13
@@ -101,15 +130,12 @@ def dp(i,j,S,T):
 
 # distance between position i and position j, default eucledian distance
 def dist(i,j,S,T):
-	# one dimension
-	if (S.ndim == 1 and T.ndim == 0):
-		return abs(S[i]-T[j])
-	else:
+	# one dimension, the dot product
 		sum = 0
 		for k in range(S.shape[1]):
 			# the dot product between
 			diff = S[i,:]-T[j,:]
-			return np.dot(diff,diff.transpose())
+			return np.dot(diff,diff.transpose())**(1/2)
 
 
 # import 
