@@ -58,26 +58,34 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	# frames
 	
 	#create an array of frames
-	frames = saved_signal[indices.astype(np.int32, copy=False)]
 
 	#hamming windowing
 	frames = frames * np.hamming(frame_size)
-	# fft on the frames to find the magnitude
+	# rfft on the frames to find the magnitude, for eliminating the duplicates of the complex number (conjugacy)
 	eng_frames = np.absolute(np.fft.rfft(frames, window_size))
 
+	# number of coefficients stored after the real fourier transform
+	coefficent_num = eng_frames.shape[-1]
 	# find the powe of frames (average of the energy over the wave)
 	pow_frames = ((1.0 / window_size) * ((eng_frames) ** 2))
+
+	non_truncated_frames = np.absolute(np.fft.fft(frames,window_size))
 	# for i  in wi
+
+
 	# we did not have duplicates
-	high_mel_freq = 1125 * np.log(1 + (sample_rate/2) / 700)
-	low_mel_freq = 0
+	mel_freq_ceil = 1125 * np.log(1 + (sample_rate/2) / 700) # ceiling
+	mel_freq_floor = 0# the floor
 	num_filter = 40 # number of filters
-	mel_points = np.linspace(low_mel_freq, high_mel_freq, num_filter + 2)
+	mel_points = np.linspace(mel_freq_floor, mel_freq_ceil, num_filter + 2)
 	# in hertz
 	hz_points = 700 * (math.e**(mel_points / 1127) - 1)
+
 	f = np.floor((window_size + 1) * hz_points / sample_rate)
-	# filter banks
-	H = np.zeros(shape=(num_filter, int(np.floor(window_size/2 + 1))))
+	# filter banks, because there are in previous steps, half of 256 coefficients are truncated, we kept 129 
+
+	# coefficients
+	H = np.zeros(shape=(num_filter, coefficent_num))
 	for m in range(1, num_filter+1):
 	    f_m_left = int(f[m - 1])    # left
 	    f_m = int(f[m])             # center
@@ -89,14 +97,17 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	    # get 1 and other parts are default zeroes
 	    H[m-1,f_m] = 1
 	    # zeroes for other ranges 
-	# dot product between each bank with the power sum of the frame       
-	filter_banks = pow_frames @ H.transpose() # find the forier  magnitude
-	# filter_banks = np.where(filter_banks == 0, np.finfo(float).eps, filter_banks)  # Numerical Stability
-	filter_banks =  np.log(filter_banks) # take the logs
-	# filter_banks
+	#perform the sum S[m]=ln∑Xa[k]^2Hm[k],0<m≤M , dot product between each with the power sum of the frame,      
+	final_segements = pow_frames @ H.transpose() # find the forier  magnitude
+	# final_segements = np.where(final_segements == 0, np.finfo(float).eps, final_segements)  # Numerical Stability
+	final_segements =  np.log(final_segements) # take the logs
+	# final_segements
 	num_ceps = 12 #number of ceps coefficients
-	mfcc = dct(filter_banks, type=2, axis=1, norm='ortho')[:, 1 : (num_ceps + 1)] # keep ceps from 2 to 13
-	return (mfcc,filter_banks)
+
+	#take the discrete fourier transform along the second axis and keep 12 coefficients
+	mfcc = dct(final_segements, type=2, axis=-1, norm='ortho')[:, 1 : (num_ceps + 1)] 
+	# keep cepstral coefficients from 2 to 13
+	return (mfcc,final_segements)
 
 # Encode the data using Logirthmtic Spectral representations
 def logSpecEncoding(data):
@@ -130,7 +141,7 @@ def dp(i,j,S,T):
 
 # distance between position i and position j, default eucledian distance
 def dist(i,j,S,T):
-	# one dimension, the dot product
+	# perform the (dot product between vectors)^ (1/2)
 		sum = 0
 		for k in range(S.shape[1]):
 			# the dot product between
