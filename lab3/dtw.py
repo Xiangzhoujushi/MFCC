@@ -1,6 +1,7 @@
 #Peiyuan's version of MFCC algorithm,
 #some ideas of codes from some external resrouce (Fayem Hathak's blog)
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import numpy as np
 import scipy.io.wavfile 
 import math
