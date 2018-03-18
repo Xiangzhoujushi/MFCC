@@ -93,14 +93,14 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	    f_m_right = int(f[m + 1])   # right
 	    denom1  = (f[m] - f[m - 1])*(f[m+1]-f[m-1])
 	    denom2 = (f[m+1] - f[m])*(f[m+1]-f[m-1])
-	    for k in range(f_m_left, f_m+1):
+	    for k in range(f_m_left, f_m):
 	        H[m - 1, k] = (2*(k - f[m - 1])) / denom1 #implement the filtering
-	    for k in range(f_m, f_m_right+1):
+	    for k in range(f_m, f_m_right):
 	        H[m - 1, k] = (2*(f[m + 1] - k)) / denom2 #implement the filtering
 	    # get 1 and other parts are default zeroes
 	    # zeroes for other ranges 
-	#perform the sum S[m]=ln∑Xa[k]^2Hm[k],0<m≤M , dot product between each with the power sum of the frame,      
-	final_segements = pow_frames @ H.transpose() # find the forier  magnitude
+	#perform the ln sums, dot product between each with the power sum of the frame,      
+	final_segements = np.dot(pow_frames, H.transpose()) # find the forier  magnitude
 	# final_segements = np.where(final_segements == 0, np.finfo(float).eps, final_segements)  # Numerical Stability
 	final_segements =  np.log(final_segements) # take the logs
 	# final_segements
