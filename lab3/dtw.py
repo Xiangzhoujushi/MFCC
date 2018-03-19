@@ -85,8 +85,8 @@ T_log_Spec = logSpecEncoding(T_Spec)
 # s = S_log_Spec.shape[0]
 # t = T_log_Spec.shape[0]
 
-MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1)
-MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2)
+MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
+MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2,frame_size = 0.025, shift = 0.01)
 
 s = len(MFCC_S)
 t = len(MFCC_T)
@@ -125,8 +125,8 @@ if ans is 'Y':
 			template_file= 'digits/'+template+'.wav'
 			(sf1,S_array) = scipy.io.wavfile .read(test_file)
 			(sf2,T_array) = scipy.io.wavfile .read(template_file)
-			MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1)
-			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2)
+			MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
+			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2,frame_size = 0.025, shift = 0.01)
 			s = len(MFCC_S) # get the length 
 			t = len(MFCC_T) # get the length
 			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		

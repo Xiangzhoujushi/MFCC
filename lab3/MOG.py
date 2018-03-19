@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import scipy.io.wavfile 
 import math
 from scipy.fftpack import dct
 from MFCC import MFCCEncoding
 from sklearn import mixture  
 from numpy import inf
+import decimal
 
 # class Gaussians:
 # 	def _init_(self,mean,std):
@@ -62,14 +63,14 @@ def dp(i,j,S,T,score_matrix):
 		score_matrix[i,j]= min(dp(i-1,j,S,T,score_matrix), dp(i-1,j-1,S,T,score_matrix), dp(i,j-1,S,T,score_matrix))+dist(i,j,S,T)
 		return score_matrix[i,j]
 
-def accuracy(Gaussian_num,weights,data,tests):
+def accuracy(Gaussian_num,weights,means,data,tests):
 	
 	# combine the array of the data into a single array
 	train_data = np.concatenate(data, axis=0 )
 	# weights = [1/num_Gaussians for i in range(num_Gaussians)]
 	# print (weights)
 	# choose 32 for the first time, use diagonal convariance type, uniform piority for each gaussian components
-	gmm = mixture.GaussianMixture(n_components = Gaussian_num,covariance_type = 'diag',max_iter=1000, weights_init = weights)
+	gmm = mixture.GaussianMixture(n_components = Gaussian_num,covariance_type = 'diag',max_iter=1000, means_init = means, weights_init = weights)
 	gmm.fit(train_data)
 	# print (np.shape(gmm.means_))
 	# check the accuracy
@@ -105,27 +106,30 @@ def accuracy(Gaussian_num,weights,data,tests):
 		if best_template[0] is test_file[0]:
 			matched_pairs +=1
 		i = i+1
-	result = str(float(matched_pairs)/11*100)+'%'
-	print ("Accuracy using Mixture of Gaussians log Probability with {} classes and default initialization is {}: ".format(Gaussian_num,result))		
-
+	result = float(matched_pairs)/11*100
+	# round the number to 4th precision after the decimal points
+	result = math.floor(result*10000)/10000
+	str_result = str(result)+"%"
+	print ("Accuracy using Mixture of Gaussians log Probability with {} classes is {} ".format(Gaussian_num,str_result))		
+	return result
 	# sample = samples[]
 	# 
 
 def main():
-	# Try on the 32 Gaussians
-	num_Gaussians = 60
+	# Try on the 32 Gaussians, default Gaussians
+	num_Gaussians = 32
 	# try on size_of_window = 512 
 	window_size = 512
-	# train our model using the sampls
+	# uniform distribution
 	weights = [1/num_Gaussians for i in range(num_Gaussians)]
-	
+
 	num_files = len(li_files)
 	samples = []
 	for file in li_files:
 		file_name = 'digits/'+file+'.wav'
 		# print(file_name)
 		(sf,S_array) = scipy.io.wavfile .read(file_name)
-		mfcc,final_segements = MFCCEncoding(window_size,S_array,sf)
+		mfcc,final_segements = MFCCEncoding(window_size,S_array,sf,frame_size = 0.01, shift = 0.005)
 		# print (mfcc.shape[0])
 		samples.append(mfcc)
 
@@ -134,13 +138,90 @@ def main():
 		file_name = 'digits/'+file+'.wav'
 		# print(file_name)
 		(sf,S_array) = scipy.io.wavfile.read(file_name)
-		mfcc,final_segements = MFCCEncoding(window_size,S_array,sf)
+		mfcc,final_segements = MFCCEncoding(window_size,S_array,sf,frame_size = 0.01, shift = 0.005)
 		# print (mfcc.shape[0])
 		tests.append(mfcc)
 	# store all MFCC samples into a list	
 	# given the samples, weights is the initial weights
-	accuracy(num_Gaussians,weights,samples,tests)	
+	print("--------------------------------------------------------------------------------")
+	print("Default Results:")
+	accuracy(Gaussian_num=num_Gaussians,weights=weights,means = None,data=samples,tests=tests)	
+	print("--------------------------------------------------------------------------------")
+	# combine weights initialization and means initilization 
+	weights_list = []
+	weights_list.append(weights)
+	# random sample
+	
+	# use uniform distribution for initial weights for 3rd and 5th and use randomized distribution for 4th
+	weights_list.append(weights)
+	weights_4 = np.random.random_sample(num_Gaussians).tolist()
+	weight_sum  = np.sum(weights_4)
+	# normalize
+	weights_list.append([weight/weight_sum for weight in weights_4])
+	weights_list.append(weights)
+	# print (samples)
+	train_data = np.concatenate(samples, axis=0 )
+	# take global mean of all data
+	means = np.mean(train_data,axis = 0)
+	# print (means)
+	means_list = []
+	means_list.append(means)
+	means_new = 1.01 * means
+	means_list.append(means_new)
+	means_new_2 = 0.95 * means
+	means_list.append(means_new_2)
 
+	# print(means.shape[0])
+	Gaussians_num_list = [k for k in range(1,8)]
+	# Initialization = [] 
+
+	fig, axes = plt.subplots(5,1,figsize=(10,8))
+	for i in range(6):
+		#create the weight array
+		# 5 different initilization
+		print("Initialization: ",i+1)
+		weights_array = None
+		accuracy_list = []
+		for j in range(1,8):
+			# create the repition of the means fo all classes
+			num_Gaussians = 2**j # take from 2^1 to 2^7
+			if i is 0 or i is 2:
+				#random distribution on class coeffs
+				weights_array = np.random.random_sample(num_Gaussians).tolist()
+				weight_sum  = np.sum(weights_array)
+				weights_array = np.array([weight/weight_sum for weight in weights_array])
+			if i is 1 or i is 3:	
+				# uniform distribution on class coeffs
+				weights_array = np.array([1/num_Gaussians for i in range(num_Gaussians)])
+			if i<=2:
+				means = means_list[i]
+				means = np.tile(means,(num_Gaussians,1))
+			else:
+				means = None
+			accuracy_list.append(accuracy(Gaussian_num=num_Gaussians,weights=weights_array,means = means,data=samples,tests=tests))		
+		
+		# plt.subplot(3,2,i+1)
+		# plt.figure
+		# if i is 0:
+		ax = axes[i]
+		text ="Accuracy VS Gaussians Num in initilizations"
+		if i is 0:
+			ax.set_title(text)
+		ax.plot(Gaussians_num_list,accuracy_list,'.-')
+		ax.set_ylabel('Accuracy (%)')
+		ax.set_xticks(Gaussians_num_list)
+		ax.set_yticks([0,20,40,60,80,100])
+		if i is 4:
+			ax.set_xlabel('classes num (powers of 2)')	
+		print("------------------------------------------------------------------------------")
+		# plots the graphs
+	fig.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.25,
+                    wspace=0.35)
+	file_name = "plots_Gaussians"+".png"
+	plt.savefig(file_name)
+	plt.show()
+	
+	
 main()
 
 

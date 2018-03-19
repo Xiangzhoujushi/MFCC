@@ -5,7 +5,7 @@ import scipy.io.wavfile
 import math
 from scipy.fftpack import dct
 
-def MFCCEncoding(window_size,signal,sample_rate):
+def MFCCEncoding(window_size,signal,sample_rate,frame_size,shift):
 	# input data is the np array, new_data is the data after the fast fourier transfrom
 	#preemphasis
 	alpha = 0.97 
@@ -24,8 +24,8 @@ def MFCCEncoding(window_size,signal,sample_rate):
 	#     start = window_start[i]
 	#     X = np.fft.fft(new_signal[start:(start+window_size)]*hamming)
 	#     frames[i,:] = X
-	frame_size = 0.02 # frame size
-	shift = 0.01 # frame stride
+	# frame_size = 0.025 # frame size
+	# shift = 0.01 # frame stride
 	# steps to form all frames
 	frame_size  = frame_size * sample_rate # Convert from seconds to samples
 	shift = shift * sample_rate  # Convert from seconds to samples
