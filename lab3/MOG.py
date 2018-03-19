@@ -79,14 +79,18 @@ def accuracy(Gaussian_num,weights,data,tests):
 		min_distance = float('inf')
 		best_template = ''
 		s = len(test) # get the length
-		test
-		S_scores = np.log(gmm.predict_proba(test))
+		test	
+		S_scores = gmm.predict_proba(test)
+		S_scores[S_scores == 0] = 0.0000001
+		S_scores = np.log(S_scores)
 		S_scores[S_scores == -inf] = -100000000
 		# print (S_scores)
 		j = 0
 		for template in data:		
 			t = len(template) # get the length 
-			T_scores = np.log(gmm.predict_proba(template))
+			T_scores = gmm.predict_proba(template)
+			T_scores[T_scores == 0] = 0.0000001
+			T_scores = np.log(T_scores)
 			T_scores[T_scores == -inf] = -100000000
 			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		
 			score_matrix = np.array([np.array(xi) for xi in score_matrix_raw])
@@ -109,7 +113,7 @@ def accuracy(Gaussian_num,weights,data,tests):
 
 def main():
 	# Try on the 32 Gaussians
-	num_Gaussians = 6
+	num_Gaussians = 60
 	# try on size_of_window = 512 
 	window_size = 512
 	# train our model using the sampls
