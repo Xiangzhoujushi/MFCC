@@ -4,6 +4,7 @@ import numpy as np
 import scipy.io.wavfile 
 import math
 from scipy.fftpack import dct
+
 def MFCCEncoding(window_size,signal,sample_rate):
 	# input data is the np array, new_data is the data after the fast fourier transfrom
 	#preemphasis

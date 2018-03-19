@@ -8,6 +8,7 @@ import math
 import sys
 from scipy.fftpack import dct
 from MFCC import MFCCEncoding
+
 # set the limit of recursion
 sys.setrecursionlimit(150000)
 
@@ -45,17 +46,15 @@ def dp(i,j,S,T):
 def dist(i,j,S,T):
 	# perform the (dot product between vectors)^ (1/2)
 		sum = 0
-		for k in range(S.shape[1]):
 			# the dot product between
-			diff = S[i,:]-T[j,:]
-			return np.dot(diff,diff.transpose())**(1/2)
+		diff = S[i,:]-T[j,:]
+		return np.dot(diff,diff.transpose())**(1/2)
 
 
 # import 
 # def main():
 	# dist_matrix = 
 	
-
 # main()
 # wave form part 1
 # wave form part 2
@@ -66,6 +65,10 @@ T = np.array([1,2,2,4,2,3,3]).tolist()
 # take two arguments
 file1= sys.argv[1]
 file2= sys.argv[2]
+
+# display the accuray and other 
+
+
 first_file = 'digits/'+file1+'.wav'
 second_file = 'digits/'+file2+'.wav'
 (sf1,S_array) = scipy.io.wavfile .read(first_file)
@@ -82,8 +85,8 @@ T_log_Spec = logSpecEncoding(T_Spec)
 # s = S_log_Spec.shape[0]
 # t = T_log_Spec.shape[0]
 
-MFCC_S,log_S = MFCCEncoding(window_size = 256,signal = S_array,sample_rate = sf1)
-MFCC_T,log_T = MFCCEncoding(window_size = 256,signal = T_array,sample_rate = sf2)
+MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1)
+MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2)
 
 s = len(MFCC_S)
 t = len(MFCC_T)
@@ -102,8 +105,50 @@ min_distance_log_representation = dp(s-1,t-1,log_S,log_T)
 print ("Minimum Distance between MFCC of waveforms {} and {}: {} ".format(file1,file2,min_distance_MFCC_representation))
 print ("Minimum Distance between log spec of waveforms {} and {}: {} ".format(file1,file2,min_distance_log_representation))
 
+# the templates list and the tests list in our model
+li_templates = ['1a','2a','3a','4a','5a','6a','7a','8a','9a','za','oa']
+li_tests = ['1b','2b','3b','4b','5b','6b','7b','8b','9b','zb','ob']
 
+# use the minimum distance file as the right label, log representation
+ans = input("Do you want to see the result of accuracy and distances between all test and template pairs (Y/N): ")
 
+if ans is 'Y':
+	matched_paris_log  = 0 # mathced pairs using log representation
+	matched_pairs_MFCC = 0 # matched pairs using MFCC representation
+	for test in li_tests:
+		test_file = 'digits/'+test+'.wav'
+		min_distance_log = float('inf')
+		min_distance_MFCC = float('inf')
+		temp_log = ""
+		temp_MFCC = ""
+		for template in li_templates:
+			template_file= 'digits/'+template+'.wav'
+			(sf1,S_array) = scipy.io.wavfile .read(test_file)
+			(sf2,T_array) = scipy.io.wavfile .read(template_file)
+			MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1)
+			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2)
+			s = len(MFCC_S) # get the length 
+			t = len(MFCC_T) # get the length
+			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		
+			score_matrix = np.array([np.array(xi) for xi in score_matrix_raw]) # score matrix for MFCC
+			score_matrix_1 = score_matrix.copy()
+			# set the min distance template
+			if dp(s-1,t-1,MFCC_S,MFCC_T)<min_distance_MFCC:
+				min_distance_MFCC = dp(s-1,t-1,MFCC_S,MFCC_T)
+				temp_MFCC = template
+			# set the min distance template
+			score_matrix = score_matrix_1
+			if dp(s-1,t-1,log_S,log_T)<min_distance_log:
+				min_distance_log = dp(s-1,t-1,log_S,log_T)
+				temp_log = template
+
+		if temp_log[0] is test[0]:
+			matched_paris_log +=1
+		if temp_MFCC[0] is test[0]:
+			matched_pairs_MFCC +=1
+		# 
+	print ("Accuracy using MFCC distance is: ",str(float(matched_paris_log)/11*100)+'%')	
+	print ("Accuracy using log spec distance is: ",str(float(matched_paris_log)/11*100)+'%')	
 	# array
 	# x
 	# array
