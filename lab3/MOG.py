@@ -176,7 +176,7 @@ def main():
 	# Initialization = [] 
 
 	fig, axes = plt.subplots(5,1,figsize=(10,8))
-	for i in range(6):
+	for i in range(5):
 		#create the weight array
 		# 5 different initilization
 		print("Initialization: ",i+1)
