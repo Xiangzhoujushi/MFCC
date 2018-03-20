@@ -1,6 +1,8 @@
 
 import numpy as np
 # import matplotlib.pyplot as plt
+#the power frame idea if from (Fayem Hathak's blog), it is just use the average magnitude, so it is
+#does not affec the result
 import scipy.io.wavfile 
 import math
 from scipy.fftpack import dct
@@ -75,7 +77,7 @@ def MFCCEncoding(window_size,signal,sample_rate,frame_size,shift):
 	num_filter = 40 # number of filters
 	mel_points = np.linspace(mel_freq_floor, mel_freq_ceil, num_filter + 2)
 	# in hertz
-	hz_points = 700 * (math.e**(mel_points / 1127) - 1)
+	hz_points = 700 * (math.e**(mel_points / 1125) - 1)
 
 	f = np.floor((window_size + 1) * hz_points / sample_rate)
 	# filter banks, because there are in previous steps, half of 256 coefficients are truncated, we kept 129 
@@ -103,8 +105,8 @@ def MFCCEncoding(window_size,signal,sample_rate,frame_size,shift):
 	num_ceps = 12 #number of ceps coefficients
 
 	#take the discrete fourier transform along the second axis and keep 12 coefficients
-	mfcc = dct(final_segements, type=2, axis=-1, norm='ortho')[:, 1 : (num_ceps + 1)] 
-	# keep cepstral coefficients from 2 to 13
+	mfcc = dct(final_segements, type=2, axis=-1, norm='ortho')[:, 1 : (num_ceps + 1)]
+	# keep cepstral coefficients from 2 to 13, because the first one is real root and disregard that
 
 	# return mfcc and logarithimic spec representation
 	return (mfcc,final_segements)

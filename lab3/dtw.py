@@ -1,5 +1,5 @@
 #Peiyuan's version of MFCC algorithm,
-#some ideas of codes from some external resrouce (Fayem Hathak's blog)
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
@@ -113,7 +113,7 @@ li_tests = ['1b','2b','3b','4b','5b','6b','7b','8b','9b','zb','ob']
 ans = input("Do you want to see the result of accuracy and distances between all test and template pairs (Y/N): ")
 
 if ans is 'Y':
-	matched_paris_log  = 0 # mathced pairs using log representation
+	matched_pairs_log  = 0 # mathced pairs using log representation
 	matched_pairs_MFCC = 0 # matched pairs using MFCC representation
 	for test in li_tests:
 		test_file = 'digits/'+test+'.wav'
@@ -143,12 +143,12 @@ if ans is 'Y':
 				temp_log = template
 
 		if temp_log[0] is test[0]:
-			matched_paris_log +=1
+			matched_pairs_log +=1
 		if temp_MFCC[0] is test[0]:
 			matched_pairs_MFCC +=1
 		# 
-	print ("Accuracy using MFCC distance is: ",str(float(matched_paris_log)/11*100)+'%')	
-	print ("Accuracy using log spec distance is: ",str(float(matched_paris_log)/11*100)+'%')	
+	print ("Accuracy using MFCC distance is: ",str(float(matched_pairs_MFCC)/11*100)+'%')
+	print ("Accuracy using log spec distance is: ",str(float(matched_pairs_log)/11*100)+'%')
 	# array
 	# x
 	# array
