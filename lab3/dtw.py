@@ -69,8 +69,8 @@ file2= sys.argv[2]
 # display the accuray and other 
 
 
-first_file = 'digits/'+file1+'.wav'
-second_file = 'digits/'+file2+'.wav'
+first_file = 'digits1/'+file1+'.wav'
+second_file = 'digits1/'+file2+'.wav'
 (sf1,S_array) = scipy.io.wavfile .read(first_file)
 (sf2,T_array) = scipy.io.wavfile .read(second_file)
 
@@ -108,26 +108,35 @@ print ("Minimum Distance between log spec of waveforms {} and {}: {} ".format(fi
 # the templates list and the tests list in our model
 li_templates = ['1a','2a','3a','4a','5a','6a','7a','8a','9a','za','oa']
 li_tests = ['1b','2b','3b','4b','5b','6b','7b','8b','9b','zb','ob']
+li_student2 = ['1','2','3','4','5','6','7','8','9','z','o']
+li_student1 = [string+'patrick' for string in li_student2]
+li_tests_all = (li_tests+li_student2+li_student1)
+# print (li_tests_all)
+li_tests_against_1 = li_templates+li_tests+li_student2
+li_tests_against_2 = li_templates+li_tests+li_student1
+
+# waveform = dict()
+
 
 # use the minimum distance file as the right label, log representation
-ans = input("Do you want to see the result of accuracy and distances between all test and template pairs (Y/N): ")
+ans = input("Do you want to see the result of accuracy of two distances between all test and template pairs (Y/N): ")
 
 if ans is 'Y':
 	matched_pairs_log  = 0 # mathced pairs using log representation
 	matched_pairs_MFCC = 0 # matched pairs using MFCC representation
 	for test in li_tests:
-		test_file = 'digits/'+test+'.wav'
+		test_file = 'digits1/'+test+'.wav'
 		min_distance_log = float('inf')
 		min_distance_MFCC = float('inf')
 		temp_log = ""
 		temp_MFCC = ""
+		(sf1,S_array) = scipy.io.wavfile .read(test_file)
+		MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
+		s = len(MFCC_S) # get the length 
 		for template in li_templates:
-			template_file= 'digits/'+template+'.wav'
-			(sf1,S_array) = scipy.io.wavfile .read(test_file)
+			template_file= 'digits1/'+template+'.wav'	
 			(sf2,T_array) = scipy.io.wavfile .read(template_file)
-			MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
 			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2,frame_size = 0.025, shift = 0.01)
-			s = len(MFCC_S) # get the length 
 			t = len(MFCC_T) # get the length
 			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		
 			score_matrix = np.array([np.array(xi) for xi in score_matrix_raw]) # score matrix for MFCC
@@ -149,13 +158,151 @@ if ans is 'Y':
 		# 
 	print ("Accuracy using MFCC distance is: ",str(float(matched_pairs_MFCC)/11*100)+'%')
 	print ("Accuracy using log spec distance is: ",str(float(matched_pairs_log)/11*100)+'%')
-	# array
-	# x
-	# array
-	# y
-	# initiate all matrix to be from
 
-# Encode the data using MFCC representations
+#extension 1
+
+ans = input("Do you want to see the results of extension1 using stundents's files as test cases (Y/N): ")
+if ans is 'Y':
+	print("Number of test cases: ", len(li_tests_all))
+	# use stundet's digits as all test cases
+	matched_pairs_log  = 0 # mathced pairs using log representation
+	matched_pairs_MFCC = 0 # matched pairs using MFCC representation
+	for test in li_tests_all:
+		# print (test)
+		test_file = 'digits1/'+test+'.wav'
+		min_distance_log = float('inf')
+		min_distance_MFCC = float('inf')
+		temp_log = ""
+		temp_MFCC = ""
+		(sf1,S_array) = scipy.io.wavfile .read(test_file)
+		# choose the left audio recording if using double side recording
+		if S_array.ndim == 2:
+			S_array = S_array[:,0]
+		MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
+		s = len(MFCC_S) # get the length 
+		for template in li_templates:
+			template_file= 'digits1/'+template+'.wav'		
+			(sf2,T_array) = scipy.io.wavfile .read(template_file)
+			# choose the right audio recording if using double side recording
+			if T_array.ndim == 2:
+				T_array = T_array[:,0]
+			# print("test shapes: ",np.shape(S_array))
+			# print("template shapes: ",np.shape(T_array))
+			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2,frame_size = 0.025, shift = 0.01)
+			t = len(MFCC_T) # get the length
+			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		
+			score_matrix = np.array([np.array(xi) for xi in score_matrix_raw]) # score matrix for MFCC
+			score_matrix_1 = score_matrix.copy()
+			# set the min distance template
+			if dp(s-1,t-1,MFCC_S,MFCC_T)<min_distance_MFCC:
+				min_distance_MFCC = dp(s-1,t-1,MFCC_S,MFCC_T)
+				temp_MFCC = template
+			# set the min distance template
+			score_matrix = score_matrix_1
+			if dp(s-1,t-1,log_S,log_T)<min_distance_log:
+				min_distance_log = dp(s-1,t-1,log_S,log_T)
+				temp_log = template
+
+		if temp_log[0] is test[0]:
+			matched_pairs_log +=1
+		if temp_MFCC[0] is test[0]:
+			matched_pairs_MFCC +=1
+	print ("Accuracy using MFCC distance on students' test cases is: ",str(float(matched_pairs_MFCC)/len(li_tests_all)*100)+'%')
+	print ("Accuracy using log spec on students' test cases distance is: ",str(float(matched_pairs_log)/len(li_tests_all)*100)+'%')
+
+ans = input("Do you want to use student 1  as the template (Y/N): ")
+if ans is 'Y':
+	print("Using Student 1 as templates------------------------------------")
+	print("Number of test cases: ", len(li_tests_against_1))
+	# #use student 1's recorded wav as templates
+	# #use stundet's digits as all test cases
+	matched_pairs_log  = 0 # mathced pairs using log representation
+	matched_pairs_MFCC = 0 # matched pairs using MFCC representation
+	for test in li_tests_against_1:
+		test_file = 'digits1/'+test+'.wav'
+		min_distance_log = float('inf')
+		min_distance_MFCC = float('inf')
+		temp_log = ""
+		temp_MFCC = ""
+		if S_array.ndim == 2:
+			S_array = S_array[:,0]
+		# S_array = np.ravel(S_array)
+		MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
+		s = len(MFCC_S) # get the length 
+		for template in li_student1:
+			template_file= 'digits1/'+template+'.wav'
+			(sf2,T_array) = scipy.io.wavfile .read(template_file)
+			if T_array.ndim == 2:
+				T_array = T_array[:,0]
+			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2,frame_size = 0.025, shift = 0.01)
+			t = len(MFCC_T) # get the length
+			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		
+			score_matrix = np.array([np.array(xi) for xi in score_matrix_raw]) # score matrix for MFCC
+			score_matrix_1 = score_matrix.copy()
+			# set the min distance template
+			if dp(s-1,t-1,MFCC_S,MFCC_T)<min_distance_MFCC:
+				min_distance_MFCC = dp(s-1,t-1,MFCC_S,MFCC_T)
+				temp_MFCC = template
+			# set the min distance template
+			score_matrix = score_matrix_1
+			if dp(s-1,t-1,log_S,log_T)<min_distance_log:
+				min_distance_log = dp(s-1,t-1,log_S,log_T)
+				temp_log = template
+
+		if temp_log[0] is test[0]:
+			matched_pairs_log +=1
+		if temp_MFCC[0] is test[0]:
+			matched_pairs_MFCC +=1
+	print ("Accuracy using MFCC distance and student 1's files as templates is: ",str(float(matched_pairs_MFCC)/33*100)+'%')
+	print ("Accuracy using log spec distance and student 1's files as templates is: ",str(float(matched_pairs_log)/33*100)+'%')
+
+# matched_pairs_log  = 0 # mathced pairs using log representation
+# matched_pairs_MFCC = 0 # matched pairs using MFCC representation
+ans = input("Do you want to use student 2 as the template (Y/N): ")
+if ans is 'Y':
+	print("Using Student 2 as templates------------------------------------")
+	print("Number of test cases: ", len(li_tests_against_2))
+	for test in li_tests_against_2:
+		test_file = 'digits1/'+test+'.wav'
+		min_distance_log = float('inf')
+		min_distance_MFCC = float('inf')
+		temp_log = ""
+		temp_MFCC = ""
+		(sf1,S_array) = scipy.io.wavfile .read(test_file)
+		if S_array.ndim == 2:
+			S_array = S_array[:,0]
+		MFCC_S,log_S = MFCCEncoding(window_size = 512,signal = S_array,sample_rate = sf1,frame_size = 0.025, shift = 0.01)
+		s = len(MFCC_S) # get the length 
+		for template in li_student2:
+			template_file= 'digits1/'+template+'.wav'
+			(sf2,T_array) = scipy.io.wavfile .read(template_file)
+			if T_array.ndim == 2:
+				T_array = T_array[:,0]
+			MFCC_T,log_T = MFCCEncoding(window_size = 512,signal = T_array,sample_rate = sf2,frame_size = 0.025, shift = 0.01)		
+			t = len(MFCC_T) # get the length
+			score_matrix_raw = [[-10 for x in range(t)] for y in range(s)]		
+			score_matrix = np.array([np.array(xi) for xi in score_matrix_raw]) # score matrix for MFCC
+			score_matrix_1 = score_matrix.copy()
+			# set the min distance template
+			if dp(s-1,t-1,MFCC_S,MFCC_T)<min_distance_MFCC:
+				min_distance_MFCC = dp(s-1,t-1,MFCC_S,MFCC_T)
+				temp_MFCC = template
+			# set the min distance template
+			score_matrix = score_matrix_1
+			if dp(s-1,t-1,log_S,log_T)<min_distance_log:
+				min_distance_log = dp(s-1,t-1,log_S,log_T)
+				temp_log = template
+
+		if temp_log[0] is test[0]:
+			matched_pairs_log +=1
+		if temp_MFCC[0] is test[0]:
+			matched_pairs_MFCC +=1
+	#use stundet 2's recorded wav as templates
+	print ("Accuracy using MFCC distance and student 2's files as templates is: ",str(float(matched_pairs_MFCC)/33*100)+'%')
+	print ("Accuracy using log spec distance and student 2's files as templates is: ",str(float(matched_pairs_log)/33*100)+'%')
+	
+	
+
 
 
 

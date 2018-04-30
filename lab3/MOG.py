@@ -126,7 +126,7 @@ def main():
 	num_files = len(li_files)
 	samples = []
 	for file in li_files:
-		file_name = 'digits/'+file+'.wav'
+		file_name = 'digits1/'+file+'.wav'
 		# print(file_name)
 		(sf,S_array) = scipy.io.wavfile .read(file_name)
 		mfcc,final_segements = MFCCEncoding(window_size,S_array,sf,frame_size = 0.01, shift = 0.005)
@@ -135,7 +135,7 @@ def main():
 
 	tests= []
 	for file in li_tests:
-		file_name = 'digits/'+file+'.wav'
+		file_name = 'digits1/'+file+'.wav'
 		# print(file_name)
 		(sf,S_array) = scipy.io.wavfile.read(file_name)
 		mfcc,final_segements = MFCCEncoding(window_size,S_array,sf,frame_size = 0.01, shift = 0.005)

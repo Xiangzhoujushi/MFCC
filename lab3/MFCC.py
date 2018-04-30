@@ -99,13 +99,14 @@ def MFCCEncoding(window_size,signal,sample_rate,frame_size,shift):
 	    # zeroes for other ranges 
 	#perform the ln sums, dot product between each with the power sum of the frame,      
 	final_segements = np.dot(pow_frames, H.transpose()) # find the forier  magnitude
-	# final_segements = np.where(final_segements == 0, np.finfo(float).eps, final_segements)  # Numerical Stability
+	# clean up the silence portions
+	final_segements = np.where(final_segements == 0, np.finfo(float).eps, final_segements)  
 	final_segements =  np.log(final_segements) # take the logs
 	# final_segements
 	num_ceps = 12 #number of ceps coefficients
 
 	#take the discrete fourier transform along the second axis and keep 12 coefficients
-	mfcc = dct(final_segements, type=2, axis=-1, norm='ortho')[:, 1 : (num_ceps + 1)]
+	mfcc = dct(final_segements, type=2, axis=-1, norm='ortho')[:, 1 : (num_ceps+1)]
 	# keep cepstral coefficients from 2 to 13, because the first one is real root and disregard that
 
 	# return mfcc and logarithimic spec representation
